@@ -45,14 +45,13 @@ if __name__ == "__main__":
             sprites = dunjunz.Sprites(details["data"])
             
             for name, sprite in sprites.sprites.items():
-                sprite.image().save(os.path.join(output_dir, name + ".png"))
+                sprite.image().save(os.path.join(output_dir, name + ".bmp"))
         
         elif details["name"].startswith("Level"):
-        
-            level = dunjunz.Level(details["data"])
+            level = dunjunz.Level(details["data"].decode('latin-1'))
             n = int(details["name"][5:])
             
             # Read the wall tile for the level.
-            level.wall_sprite.image().save(os.path.join(output_dir, "%02i.png" % n))
+            level.wall_sprite.image().save(os.path.join(output_dir, "%02i.bmp" % n))
     
     sys.exit()

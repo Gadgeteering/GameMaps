@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-imagemap.py - Save a representation of a Dunjunz level to a PNG file.
+imagemap.py - Save a representation of a Dunjunz level to a BMP file.
 
 Copyright (C) 2016 David Boddie <david@boddie.org.uk>
 
@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import os, sys
-import Image
+from PIL import Image
 import UEFfile
 import dunjunz
 
@@ -62,9 +62,9 @@ def get_image_name(level, level_number, row, column):
             # Just use the appropriate sprite for the first door found.
             n, o = doors[0]
             if o == 0x1d:
-                return "v_door", map(lambda (n, o): n, doors)
+                return "v_door", list(map(lambda x: x[0], doors))
             else:
-                return "h_door", map(lambda (n, o): n, doors)
+                return "h_door", list(map(lambda x: x[0], doors))
         else:
             return level_number, None
     
@@ -224,11 +224,13 @@ if __name__ == "__main__":
     output_file_name = sys.argv[3]
     
     for details in u.contents:
-    
-        if details["name"] == "Dunjunz":
-            sprites = dunjunz.Sprites(details["data"])
+
+        print(details["name"].decode('utf-8'))
+        details["name"] = details["name"].capitalize()
+        if details["name"].decode('utf-8') == "Dunjunz":
+            sprites = dunjunz.Sprites(details["data"].decode('latin-1'))
         
-        elif details["name"] == "Level%i" % level_number:
+        elif details["name"].decode('utf-8') == "Level%i" % level_number:
             break
     else:
         sys.stderr.write("Failed to find a suitable data file.\n")
@@ -238,11 +240,12 @@ if __name__ == "__main__":
     
     for i, n in enumerate(raw_numbers):
         n = n.replace(" ", "\x00").replace("1", "\x02")
-        im = Image.fromstring("P", (8, 10), n)
+
+        im = Image.frombytes("P", (8, 10), n.encode('latin-1'))
         im.putpalette((0,0,0, 255,0,0, 0,255,0, 255,255,255))
         numbers[i] = im
     
-    level = dunjunz.Level(details["data"])
+    level = dunjunz.Level(details["data"].decode('latin-1'))
     
     level_image = Image.new("P", (32 * tile_size[0], 48 * tile_size[1]), 0)
     level_image.putpalette((0,0,0, 255,0,0, 0,255,0, 255,255,255))
@@ -275,11 +278,11 @@ if __name__ == "__main__":
                     ox = bx
                     
                     while n > 0:
-                        number_im = numbers[n % 10]
+                        number_im = numbers[int(n) % 10]
                         ox -= number_im.size[0]
                         level_image.paste(number_im, (
                             (column * tile_size[0]) + im.size[0] + ox,
-                            (row * tile_size[1]) + im.size[1] - number_im.size[1]/2))
+                            (row * tile_size[1]) + im.size[1] - number_im.size[1]//2))
                         
                         n = n / 10
                     

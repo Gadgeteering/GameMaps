@@ -22,6 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, sys
 import UEFfile
 import dunjunz
+import PIL.Image
+
+
+sys.modules['PIL.PyAccess'] = PIL.Image
+
+import hqx
+
 
 type_map = {
     0x28: "treasure",
@@ -61,19 +68,22 @@ def get_image_name(level, level_number, row, column):
             # Just use the appropriate sprite for the first door found.
             n, o = doors[0]
             if o == 0x1d:
-                return "v_door", map(lambda (n, o): n, doors)
+                return "v_door", map(lambda x: x[0], doors)
+
+
             else:
-                return "h_door", map(lambda (n, o): n, doors)
+                return "h_door", map(lambda x: x[0], doors)
         else:
             return "%02i" % level_number, None
     
-    elif level.is_collectable(row, column) and \
-         (column, row) in level.lookup:
+    elif level.is_collectable(row, column) and (column, row) in level.lookup:
     
         name = type_map[level.lookup[(column, row)]]
+        
         if name == "teleport":
             return name, [level.teleporters.index((column, row))]
         else:
+            print(name)
             return name, None
     
     else:
@@ -100,7 +110,7 @@ if __name__ == "__main__":
         os.mkdir(output_dir)
     
     for details in u.contents:
-    
+        details["name"] = details["name"].decode('utf-8').capitalize()
         if details["name"] == "Dunjunz":
             sprites = dunjunz.Sprites(details["data"])
         
@@ -110,7 +120,7 @@ if __name__ == "__main__":
         sys.stderr.write("Failed to find a suitable data file.\n")
         sys.exit(1)
     
-    level = dunjunz.Level(details["data"])
+    level = dunjunz.Level(details["data"],level_number)
     
     f = open(os.path.join(output_dir, "index.html"), "w")
     f.write("<html>\n<head><title>Dunjunz Level %i</title></head>\n" % level_number)
@@ -124,18 +134,21 @@ if __name__ == "__main__":
         for column in range(32):
         
             image_name, extra = get_image_name(level, level_number, row, column)
+            #print(image_name, extra)
             if extra != None:
-                f.write('<td><img src="%s.png" alt="%s" /></td>\n' % (image_name, ",".join(map(str, extra))))
+                f.write('<td><img src="%s.bmp" alt="%s" /></td>\n' % (image_name, ",".join(map(str, extra))))
             else:
-                f.write('<td><img src="%s.png" /></td>\n' % image_name)
+                f.write('<td><img src="%s.bmp" /></td>\n' % image_name)
         
         f.write("</tr>\n")
     
     f.write("</table>\n<body>\n<html>\n")
     
     for name, sprite in sprites.sprites.items():
-        sprite.image(size = (32, 24)).save(os.path.join(output_dir, name + ".png"))
-    
-    level.wall_sprite.image(size = (32, 24)).save(os.path.join(output_dir, "%02i.png" % level_number))
-    
+        img = sprite.image().convert("RGB")
+        upscaled = hqx.hq4x(img)
+        upscaled.save(os.path.join(output_dir, name + ".bmp"))
+    img = level.wall_sprite.image().convert("RGB")
+    upscaled = hqx.hq4x(img)
+    upscaled.save(os.path.join(output_dir, "%02i.bmp" % level_number))
     sys.exit()

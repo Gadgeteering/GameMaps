@@ -53,7 +53,8 @@ if __name__ == "__main__":
     u = UEFfile.UEFfile(sys.argv[1])
     
     for details in u.contents:
-    
+        print(details["name"].decode('utf-8'))
+        details["name"] = details["name"].decode('utf-8').capitalize()
         if details["name"] == "Level%i" % level:
             break
     else:
@@ -61,7 +62,6 @@ if __name__ == "__main__":
         sys.exit(1)
     
     level = dunjunz.Level(details["data"])
-    
     for row in range(48):
     
         for column in range(32):

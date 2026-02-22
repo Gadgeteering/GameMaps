@@ -20,16 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import sys
-import Image
-import UEFfile
+from PIL import Image
+
 
 def unscramble_data(data):
-
-    new_data = ""
+    new_data = []
     for i in range(len(data)):
-    
-        new_data += chr(ord(data[i]) ^ (i % 256))
-    
+        new_data += bytes([(data[i]) ^ (i % 256)])
+
     return new_data
 
 
@@ -46,9 +44,10 @@ def add_checksum(level_number, data):
     must be scrambled after this value has been added."""
     
     total = 0
-    
+
     for i in range(len(data) - 1):
-        total += ord(data[i])
+        
+        total += data[i]
     
     total = total & 0xff
     
@@ -57,8 +56,7 @@ def add_checksum(level_number, data):
         v = 0x100 + c - total
     else:
         v = c - total
-    
-    return data[:-1] + chr(v)
+    return v
 
 
 def read_bits(byte):
@@ -68,6 +66,7 @@ def read_bits(byte):
     while i > 0:
     
         if byte & i != 0:
+
             bits.append(1)
         else:
             bits.append(0)
@@ -79,11 +78,14 @@ def read_bits(byte):
 
 class Level:
 
-    def __init__(self, data, scrambled = True):
+    def __init__(self, data, level_number, scrambled = True):
     
         if scrambled:
             data = unscramble_data(data)
-        
+            if add_checksum(level_number, data) != 0:
+                print("Data unscrambled unsuccessfully.")
+                exit(1)
+         
         self.read_data(data)
     
     def read_data(self, data):
@@ -93,9 +95,9 @@ class Level:
         
         for i in range(1, 0x20):
         
-            x = ord(data[i])
-            y = ord(data[0x20 + i])
-            t = ord(data[0x40 + i])
+            x = data[i]
+            y = data[0x20 + i]
+            t = data[0x40 + i]
             if t != 0xff:
                 self.lookup[(x, y)] = t
                 if t == 0x2b:
@@ -105,9 +107,9 @@ class Level:
         
         for i in range(1, 21):
         
-            x = ord(data[0x60 + i])
-            y = ord(data[0x75 + i])
-            o = ord(data[0x8a + i])
+            x = data[0x60 + i]
+            y = data[0x75 + i]
+            o = data[0x8a + i]
             if x != 0xff and y != 0xff and o != 0xff:
                 self.doors.setdefault((x, y), []).append((i, o))
         
@@ -115,8 +117,8 @@ class Level:
         
         for i in range(1, 21):
         
-            x = ord(data[0xa0 + i])
-            y = ord(data[0xb5 + i])
+            x = data[0xa0 + i]
+            y = data[0xb5 + i]
             if x != 0xff and y != 0xff:
                 self.keys.setdefault((x, y), []).append(i)
         
@@ -124,8 +126,8 @@ class Level:
         
         for i in range(8):
         
-            x = ord(data[0xd0 + i])
-            y = ord(data[0xd8 + i])
+            x = data[0xd0 + i]
+            y = data[0xd8 + i]
             self.trapdoors.add((x, y))
         
         self.solid = []
@@ -139,8 +141,8 @@ class Level:
             
             for column in range(0, 32, 8):
             
-                solid_row += read_bits(ord(data[0xe0 + r + column]))
-                collectables_row += read_bits(ord(data[0x1b0 + r + column]))
+                solid_row += read_bits(data[int(0xe0 + r + column)])
+                collectables_row += read_bits(data[int(0x1b0 + r + column)])
             
             self.solid.append(solid_row)
             self.collectables.append(collectables_row)
@@ -148,8 +150,8 @@ class Level:
         # Read the wall tile for the level.
         self.wall_sprite = Sprite(data[-48:-24])
         
-        self.exit_x = ord(data[0x1e])
-        self.exit_y = ord(data[0x3e])
+        self.exit_x = data[0x1e]
+        self.exit_y = data[0x3e]
     
     def is_solid(self, row, column):
         return self.solid[row][column] != 0
@@ -167,12 +169,13 @@ class Sprite:
     def read_columns(self, byte):
     
         columns = []
-        byte = ord(byte)
+        byte = ord(byte) if isinstance(byte, str) else byte
         for i in range(4):
-    
+
             v = (byte & 0x01) | ((byte & 0x10) >> 3)
             byte = byte >> 1
             columns.append(v)
+
     
         columns.reverse()
         return "".join(map(chr, columns))
@@ -190,7 +193,7 @@ class Sprite:
     
     def image(self, size = None):
     
-        im = Image.fromstring("P", (8, 12), self.data)
+        im = Image.frombytes("P", (8, 12), self.data.encode('latin-1'))
         im.putpalette((0,0,0, 255,0,0, 0,255,0, 255,255,255))
         if size != None:
             im = im.resize(size, Image.NEAREST)
