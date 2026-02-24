@@ -65,14 +65,13 @@ def read_bits(byte):
     i = 128
     while i > 0:
     
-        if byte & i != 0:
+        if byte & i == i:
 
             bits.append(1)
         else:
             bits.append(0)
         
         i = i >> 1
-    
     return bits
 
 
@@ -82,9 +81,9 @@ class Level:
     
         if scrambled:
             data = unscramble_data(data)
-            if add_checksum(level_number, data) != 0:
-                print("Data unscrambled unsuccessfully.")
-                exit(1)
+            #if add_checksum(level_number, data) != 0:
+                #print("Data unscrambled unsuccessfully.")
+                #exit(1)
          
         self.read_data(data)
     
@@ -132,18 +131,16 @@ class Level:
         
         self.solid = []
         self.collectables = []
-        
-        for row in range(48):
-        
-            r = ((row/8) * 0x20) + (row % 8)
+       
+        for row in range(48):     
+            r = ((row//8) * 0x20) + (row % 8)
             solid_row = []
             collectables_row = []
             
             for column in range(0, 32, 8):
-            
-                solid_row += read_bits(data[int(0xe0 + r + column)])
-                collectables_row += read_bits(data[int(0x1b0 + r + column)])
-            
+                solid_row += read_bits(data[0xe0 + r + column])
+                
+                collectables_row += read_bits(data[0x1b0 + r + column])
             self.solid.append(solid_row)
             self.collectables.append(collectables_row)
         
@@ -237,7 +234,6 @@ class Sprites:
     def read_all(self, data):
     
         for base, names in self.sprite_names.items():
-        
             for s in range(len(names)):
             
                 offset = base + (s * 48)

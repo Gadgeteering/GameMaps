@@ -83,6 +83,7 @@ def get_image_name(level, level_number, row, column):
         if name == "teleport":
             return name, [level.teleporters.index((column, row))]
         else:
+            print(name)
             return name, None
     
     else:
@@ -91,36 +92,34 @@ def get_image_name(level, level_number, row, column):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
     
-        sys.stderr.write("Usage: %s <Dunjunz UEF file> <level> <output directory>\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s <Dunjunz level binary file> <level> <sprite><output directory>\n" % sys.argv[0])
         sys.exit(1)
     
-    level_number = int(sys.argv[2])
+    level_number = int(sys.argv[3])
     if not 1 <= level_number <= 25:
     
         sys.stderr.write("Please specify a level from 1 to 25.\n")
         sys.exit(1)
     
-    u = UEFfile.UEFfile(sys.argv[1])
-    output_dir = sys.argv[3]
+
+   
+    output_dir = sys.argv[4]
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     
-    for details in u.contents:
-        details["name"] = details["name"].decode('utf-8').capitalize()
-        if details["name"] == "Dunjunz":
-            sprites = dunjunz.Sprites(details["data"])
-        
-        elif details["name"] == "Level%i" % level_number:
-            break
-    else:
-        sys.stderr.write("Failed to find a suitable data file.\n")
-        sys.exit(1)
-    
-    level = dunjunz.Level(details["data"],level_number)
-    
+
+    f = open(os.path.join(sys.argv[1]), "rb")
+    data = f.read()
+    f.close()
+    level = dunjunz.Level(data,level_number)
+    f = open(os.path.join(sys.argv[2]), "rb")
+    data = f.read()
+    f.close()
+    sprites = dunjunz.Sprites(data)
+
     f = open(os.path.join(output_dir, "index.html"), "w")
     f.write("<html>\n<head><title>Dunjunz Level %i</title></head>\n" % level_number)
     f.write("<body>\n<h1>Dunjunz Level %i</h1>\n" % level_number)
@@ -131,8 +130,6 @@ if __name__ == "__main__":
         f.write("<tr>\n")
         
         for column in range(32):
-        
-            image_name, extra = get_image_name(level, level_number, row, column)
             if extra != None:
                 f.write('<td><img src="%s.bmp" alt="%s" /></td>\n' % (image_name, ",".join(map(str, extra))))
             else:
@@ -145,6 +142,8 @@ if __name__ == "__main__":
     for name, sprite in sprites.sprites.items():
         img = sprite.image().convert("RGB")
         upscaled = hqx.hq4x(img)
+        upscaled.show()
+        exit(1)
         upscaled.save(os.path.join(output_dir, name + ".bmp"))
     img = level.wall_sprite.image().convert("RGB")
     upscaled = hqx.hq4x(img)
