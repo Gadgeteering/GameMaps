@@ -24,6 +24,9 @@ from PIL import Image
 import UEFfile
 import dunjunz
 
+
+
+
 type_map = {
     0x28: "treasure",
     0x29: "food",
@@ -195,12 +198,12 @@ raw_numbers = [
 
 if __name__ == "__main__":
 
-    if not 4 <= len(sys.argv) <= 5:
+    if not 0 <= len(sys.argv) <= 52:
     
-        sys.stderr.write("Usage: %s <Dunjunz UEF file> <level> <output file name> [scale]\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s <Dunjunz UEF file> <[scale]\n" % sys.argv[0])
         sys.exit(1)
     
-    elif len(sys.argv) == 5:
+    elif len(sys.argv) == 2:
         try:
             scale = float(sys.argv[4])
             if scale <= 0.0 or scale > 2.0:
@@ -214,99 +217,100 @@ if __name__ == "__main__":
     
     tile_size = (32, 24)
     
-    level_number = int(sys.argv[2])
-    if not 1 <= level_number <= 25:
     
-        sys.stderr.write("Please specify a level from 1 to 25.\n")
-        sys.exit(1)
     
     u = UEFfile.UEFfile(sys.argv[1])
-    output_file_name = sys.argv[3]
-    
-    for details in u.contents:
+    output_dir = "levels"
+    if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
+    for level_number in range(1, 26):
+        output_file_name = os.path.join(output_dir, "Level_%i.png" % level_number)
+        
+        for details in u.contents:
 
-        print(details["name"].decode('utf-8'))
-        details["name"] = details["name"].capitalize()
-        if details["name"].decode('utf-8') == "Dunjunz":
-            sprites = dunjunz.Sprites(details["data"].decode('latin-1'))
-        
-        elif details["name"].decode('utf-8') == "Level%i" % level_number:
-            break
-    else:
-        sys.stderr.write("Failed to find a suitable data file.\n")
-        sys.exit(1)
-    
-    numbers = {}
-    
-    for i, n in enumerate(raw_numbers):
-        n = n.replace(" ", "\x00").replace("1", "\x02")
-
-        im = Image.frombytes("P", (8, 10), n.encode('latin-1'))
-        im.putpalette((0,0,0, 255,0,0, 0,255,0, 255,255,255))
-        numbers[i] = im
-    
-    level = dunjunz.Level(details["data"].decode('latin-1'))
-    
-    level_image = Image.new("P", (32 * tile_size[0], 48 * tile_size[1]), 0)
-    level_image.putpalette((0,0,0, 255,0,0, 0,255,0, 255,255,255))
-    
-    for row in range(48):
-    
-        for column in range(32):
-        
-            image_name, extra = get_image_name(level, level_number, row, column)
+            print(details["name"].decode('utf-8'))
+            details["name"] = details["name"].capitalize()
+            if details["name"].decode('utf-8') == "Dunjunz":
+                sprites = dunjunz.Sprites(details["data"].decode('latin-1'))
             
-            if image_name == level_number:
-                im = level.wall_sprite.image(size = tile_size)
-            else:
-                im = sprites.sprites[image_name].image(size = tile_size)
-            
-            level_image.paste(im, (column * tile_size[0], row * tile_size[1]))
-            
-    for row in range(48):
-    
-        for column in range(32):
-        
-            image_name, extra = get_image_name(level, level_number, row, column)
-            
-            if extra != None:
-            
-                bx = -8
-                
-                for n in extra:
-                
-                    ox = bx
-                    
-                    while n > 0:
-                        number_im = numbers[int(n) % 10]
-                        ox -= number_im.size[0]
-                        level_image.paste(number_im, (
-                            (column * tile_size[0]) + im.size[0] + ox,
-                            (row * tile_size[1]) + im.size[1] - number_im.size[1]//2))
-                        
-                        n = n / 10
-                    
-                    bx += 20
-    
-    if scale != 1:
-        i = int(scale)
-        
-        if scale != i or scale < 1:
-            level_image = level_image.convert("RGB")
+            elif details["name"].decode('utf-8') == "Level%i" % level_number:
+                break
         else:
-            while i & 1 == 0:
-                i = i >> 1
-            
-            # The lowest bit is 1. Remove it and check for other bits.
-            i = i >> 1
-            if i & 1 != 0:
-                # Not a multiple of 2, so convert the image to RGB format.
-                level_image = level_image.convert("RGB")
+            sys.stderr.write("Failed to find a suitable data file.\n")
+            sys.exit(1)
         
-        level_image = level_image.resize((int(level_image.size[0] * scale),
-                                          int(level_image.size[1] * scale)),
-                                         Image.ANTIALIAS)
-    
-    level_image.save(output_file_name)
+        numbers = {}
+        
+        for i, n in enumerate(raw_numbers):
+            n = n.replace(" ", "\x00").replace("1", "\x02")
+
+            im = Image.frombytes("P", (8, 10), n.encode('latin-1'))
+            im.putpalette((0,0,0, 255,0,0, 0,255,0, 255,255,255))
+            numbers[i] = im
+        
+        level = dunjunz.Level(details["data"],level_number)
+        
+        level_image = Image.new("P", (32 * tile_size[0], 48 * tile_size[1]), 0)
+        level_image.putpalette((0,0,0, 255,0,0, 0,255,0, 255,255,255))
+        
+        for row in range(48):
+        
+            for column in range(32):
+            
+                image_name, extra = get_image_name(level, level_number, row, column)
+                
+                if image_name == level_number:
+                    im = level.wall_sprite.image(size = tile_size)
+                else:
+                    im = sprites.sprites[image_name].image(size = tile_size)
+                
+                level_image.paste(im, (column * tile_size[0], row * tile_size[1]))
+        
+        for row in range(48):
+        
+            for column in range(32):
+            
+                image_name, extra = get_image_name(level, level_number, row, column)
+                
+                if extra != None:
+                
+                    bx = -8
+                    
+                    for n in extra:
+                        
+                        
+                        ox = bx
+                        
+                        while n > 0:
+                            n= int(n)
+                            number_im = numbers[n % 10]
+                            ox -= number_im.size[0]
+                            level_image.paste(number_im, (
+                                (column * tile_size[0]) + im.size[0] + ox,
+                                (row * tile_size[1]) + im.size[1] - number_im.size[1]//2))
+                            
+                            n = n / 10
+                        
+                        bx += 20
+        if scale != 1:
+            i = int(scale)
+            
+            if scale != i or scale < 1:
+                level_image = level_image.convert("RGB")
+            else:
+                while i & 1 == 0:
+                    i = i >> 1
+                
+                # The lowest bit is 1. Remove it and check for other bits.
+                i = i >> 1
+                if i & 1 != 0:
+                    # Not a multiple of 2, so convert the image to RGB format.
+                    level_image = level_image.convert("RGB")
+            
+            level_image = level_image.resize((int(level_image.size[0] * scale),
+                                            int(level_image.size[1] * scale)),
+                                            Image.ANTIALIAS)
+        
+        level_image.save(output_file_name)
     
     sys.exit()

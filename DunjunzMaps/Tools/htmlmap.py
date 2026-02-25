@@ -23,10 +23,7 @@ import os, sys
 import UEFfile
 import dunjunz
 import PIL.Image
-
-
 sys.modules['PIL.PyAccess'] = PIL.Image
-
 import hqx
 
 
