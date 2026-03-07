@@ -23,8 +23,10 @@ import os, sys
 import UEFfile
 import dunjunz
 import PIL.Image
+
 sys.modules['PIL.PyAccess'] = PIL.Image
 import hqx
+from PIL import Image
 
 
 type_map = {
@@ -104,7 +106,9 @@ if __name__ == "__main__":
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    
+    for details in u.contents:
+        details["name"] = details["name"]
+       
     for details in u.contents:
         details["name"] = details["name"].decode('utf-8').capitalize()
         if details["name"] == "Dunjunz":
@@ -115,10 +119,9 @@ if __name__ == "__main__":
     else:
         sys.stderr.write("Failed to find a suitable data file.\n")
         sys.exit(1)
-    
     level = dunjunz.Level(details["data"],level_number)
     
-    f = open(os.path.join(output_dir, "index.html"), "w")
+    f = open(os.path.join(output_dir, "index"+str(level_number)+".html"), "w")
     f.write("<html>\n<head><title>Dunjunz Level %i</title></head>\n" % level_number)
     f.write("<body>\n<h1>Dunjunz Level %i</h1>\n" % level_number)
     f.write('<table cellpadding="0" cellspacing="0">\n')
@@ -140,10 +143,9 @@ if __name__ == "__main__":
     f.write("</table>\n<body>\n<html>\n")
     
     for name, sprite in sprites.sprites.items():
-        img = sprite.image().convert("RGB")
-        upscaled = hqx.hq4x(img)
-        upscaled.save(os.path.join(output_dir, name + ".bmp"))
-    img = level.wall_sprite.image().convert("RGB")
-    upscaled = hqx.hq4x(img)
-    upscaled.save(os.path.join(output_dir, "%02i.bmp" % level_number))
+        img = sprite.image().resize((8, 8), resample = Image.NEAREST)
+        print(img.size)
+        img.save(os.path.join(output_dir, name + ".bmp"))
+    #img = level.wall_sprite.image().convert("RGB")
+    img.save(os.path.join(output_dir, "%02i.bmp" % level_number))
     sys.exit()

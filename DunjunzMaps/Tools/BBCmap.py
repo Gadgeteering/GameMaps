@@ -19,10 +19,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from email.mime import text
 from fileinput import filename
 import os, sys
-import UEFfile
-import dunjunz_beeb as dunjunz
+import dunjunz 
 
 type_map = {
     0x28: "treasure",
@@ -85,40 +85,32 @@ def get_image_name(level, level_number, row, column):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 3:
     
-        sys.stderr.write("Usage: %s <Dunjunz UEF file> <level> <output directory>\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s <Dunjunz BBC filetmp <output directory>\n" % sys.argv[0])
         sys.exit(1)
-    
-    level_number = int(sys.argv[2])
-    if not 1 <= level_number <= 25:
-    
-        sys.stderr.write("Please specify a level from 1 to 25.\n")
-        sys.exit(1)
-    
-    u = UEFfile.UEFfile(sys.argv[1])
-    output_dir = sys.argv[3]
+
+    output_dir = sys.argv[2]
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     
-    for details in u.contents:
-        details["name"] = details["name"].decode('utf-8').capitalize()
-        print(details["name"])
+    level_str = sys.argv[1].split("_")[0]
+    print(level_str)
+    level_number = int("".join(filter(str.isdigit, level_str)))
+
+    print("Level number: %s" % level_number)
+    f = open(os.path.join(sys.argv[1]), "rb")
+
         
-        if details["name"] == "Title":
-            print(details["data"].decode('latin-1'))
-            sprites = dunjunz.Sprites(details["data"])
+
+    #sprites = dunjunz.Sprites(details["data"])
         
-        elif details["name"] == "Level%i" % level_number:
-            break
-    else:
-        sys.stderr.write("Failed to find a suitable data file.\n")
-        sys.exit(1)
-    
-    level = dunjunz.Level(details["data"])
-    
-    f = open(os.path.join(output_dir, "index.html"), "w")
+
+    p=f.read()
+    level = dunjunz.Level(p,1)
+    f.close()
+    f = open(os.path.join(output_dir, "index"+str(level_number)+".html"), "w")
     f.write("<html>\n<head><title>Dunjunz Level %i</title></head>\n" % level_number)
     f.write("<body>\n<h1>Dunjunz Level %i</h1>\n" % level_number)
     f.write('<table cellpadding="0" cellspacing="0">\n')
@@ -131,17 +123,25 @@ if __name__ == "__main__":
         
             image_name, extra = get_image_name(level, level_number, row, column)
             if extra != None:
-                f.write('<td><img src="%s.png" alt="%s" /></td>\n' % (image_name, ",".join(map(str, extra))))
+                f.write('<td><img src="%s.bmp" alt="%s" /></td>\n' % (image_name, ",".join(map(str, extra))))
             else:
-                f.write('<td><img src="%s.png" /></td>\n' % image_name)
+                f.write('<td><img src="%s.bmp" /></td>\n' % image_name)
         
         f.write("</tr>\n")
     
     f.write("</table>\n<body>\n<html>\n")
-    
+
+    f = open("DUN1_2000_2000.bin", "rb")
+    p=f.read()
+    f.close()
+    exit(1)
+
+    sprites = dunjunz.Sprites(p)
     for name, sprite in sprites.sprites.items():
-        sprite.image(size = (32, 24)).save(os.path.join(output_dir, name + ".png"))
+        print(name)
+        im= sprite.image(size = (32, 24))
+        sprite.image(size = (32, 24)).save(os.path.join(output_dir, name + ".bmp"))
     
-    level.wall_sprite.image(size = (32, 24)).save(os.path.join(output_dir, "%02i.png" % level_number))
+    level.wall_sprite.image(size = (32, 24)).save(os.path.join(output_dir, "%02i.bmp" % level_number))
     
     sys.exit()

@@ -43,16 +43,16 @@ type_map = {
 
 def get_image_name(level, level_number, row, column):
 
-    if (row, column) == (11, 11):
+    """ if (row, column) == (11, 11):
         return "ranger_up1", None
     elif (row, column) == (12, 11):
         return "wizard_right1", None
     elif (row, column) == (11, 12):
         return "barbarian_down1", None
     elif (row, column) == (12, 12):
-        return "fighter_left1", None
+        return "fighter_left1", None """
     
-    elif (column, row) in level.keys:
+    if (column, row) in level.keys:
         keys = level.keys[(column, row)]
         return "key", keys
     
@@ -215,20 +215,19 @@ if __name__ == "__main__":
     else:
         scale = 1
     
-    tile_size = (32, 24)
+    tile_size = (16, 16)
     
+
     
     
     u = UEFfile.UEFfile(sys.argv[1])
-    output_dir = "levels"
+    output_dir = os.path.join(os.path.dirname(sys.argv[2]), "levels")
     if not os.path.exists(output_dir):
             os.mkdir(output_dir)
     for level_number in range(1, 26):
         output_file_name = os.path.join(output_dir, "Level_%i.png" % level_number)
         
         for details in u.contents:
-
-            print(details["name"].decode('utf-8'))
             details["name"] = details["name"].capitalize()
             if details["name"].decode('utf-8') == "Dunjunz":
                 sprites = dunjunz.Sprites(details["data"].decode('latin-1'))
@@ -258,10 +257,11 @@ if __name__ == "__main__":
             for column in range(32):
             
                 image_name, extra = get_image_name(level, level_number, row, column)
-                
                 if image_name == level_number:
                     im = level.wall_sprite.image(size = tile_size)
                 else:
+                    if image_name != "blank":
+                        print(image_name)
                     im = sprites.sprites[image_name].image(size = tile_size)
                 
                 level_image.paste(im, (column * tile_size[0], row * tile_size[1]))
@@ -312,5 +312,6 @@ if __name__ == "__main__":
                                             Image.ANTIALIAS)
         
         level_image.save(output_file_name)
+        print("Saved %s." % output_file_name)
     
     sys.exit()

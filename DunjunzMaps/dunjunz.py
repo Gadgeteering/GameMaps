@@ -74,6 +74,53 @@ def read_bits(byte):
         i = i >> 1
     return bits
 
+from PIL import Image
+
+def decode_mode5_sprite(data, width_px, height_px):
+    """
+    Decodes raw BBC Micro MODE 5 sprite data into a Pillow Image.
+    MODE 5: 4 colors (2 bits/pixel), stored in 8x8 character cell blocks.
+    """
+    # Create an RGB image
+    img = Image.new('RGB', (width_px, height_px))
+    pixels = img.load()
+
+    # Standard MODE 5 Palette (Logical 0-3)
+    palette = {
+        0: (0, 0, 0),       # Black
+        1: (255, 0, 0),     # Red
+        2: (255, 255, 0),   # Yellow
+        3: (255, 255, 255)  # White
+    }
+
+    # Iterate through character cells (8x8 pixels)
+    # In Mode 5, a cell is 8 bytes. One byte = 4 pixels.
+    cells_across = width_px // 4
+    cells_down = height_px // 8  
+    ptr = 0
+    for cy in range(cells_down):
+        for cx in range(cells_across):
+            # Process one 8x8 cell (8 bytes)
+            for row in range(8):
+                if ptr >= len(data): break
+                byte_val = data[ptr]
+                ptr += 1
+                
+                # Extract 4 pixels from the byte (Bit-interleaved)
+                for p in range(4):
+                    # Bit p = low, Bit p+4 = high
+                    low = (byte_val >> p) & 1
+                    high = (byte_val >> (p + 4)) & 1
+                    color_idx = low | (high << 1)
+                    
+                    # Calculate target coordinates
+                    x = (cx * 4) + p
+                    y = (cy * 8) + row
+                    pixels[x, y] = palette[color_idx]
+
+    return img
+
+
 
 class Level:
 
@@ -133,6 +180,7 @@ class Level:
         self.collectables = []
        
         for row in range(48):     
+
             r = ((row//8) * 0x20) + (row % 8)
             solid_row = []
             collectables_row = []
@@ -234,6 +282,8 @@ class Sprites:
     def read_all(self, data):
     
         for base, names in self.sprite_names.items():
+            print("Reading sprites at offset %04x..." % base)
+            print("Sprites: %s" % ", ".join(names))
             for s in range(len(names)):
             
                 offset = base + (s * 48)
