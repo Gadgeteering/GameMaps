@@ -285,11 +285,11 @@ if __name__ == "__main__":
                             n= int(n)
                             number_im = numbers[n % 10]
                             ox -= number_im.size[0]
-                            #level_image.paste(number_im, (
-                            #    (column * tile_size[0]) + im.size[0] + ox,
-                            #    (row * tile_size[1]) + im.size[1] - number_im.size[1]//2))
+                            level_image.paste(number_im, (
+                                (column * tile_size[0]) + im.size[0]//2 + ox,
+                                (row * tile_size[1]) + im.size[1]//2 - number_im.size[1]*3))
                             
-                            n = n / 10
+                            n = n // 10
                         
                         bx += 20
         if scale != 1:
@@ -310,7 +310,7 @@ if __name__ == "__main__":
             level_image = level_image.resize((int(level_image.size[0] * scale),
                                             int(level_image.size[1] * scale)),
                                             Image.ANTIALIAS)
-        
+      
         level_image.save(output_file_name)
         print("Saved %s." % output_file_name)
     

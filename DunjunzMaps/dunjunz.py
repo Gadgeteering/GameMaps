@@ -248,7 +248,7 @@ class Sprite:
 class Sprites:
 
     sprite_names = {
-        0x0140: ("boots", "armour", "potion", "dagger", "weapons", "crucifix"),
+        0x0140: ("boots", "armour", "potion", "dagger", "weapons", "crucifix","helmet",),
         0x0e40: ("sword_up", "sword_right", "sword_down", "sword_left"),
         0x1100: ("ranger_left1", "skull0", "skull1", "skull2", "skull3", "skull4"),
         0x1910: ("drainer",),
@@ -278,6 +278,8 @@ class Sprites:
         self.sprites = {}
         self.read_all(data)
         self.sprites["blank"] = Sprite("\x00" * 8 * 12)
+        self.sprites["wall"] = Sprite("\x55" * 8 * 12)
+       
     
     def read_all(self, data):
     

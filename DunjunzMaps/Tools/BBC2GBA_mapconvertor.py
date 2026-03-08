@@ -5,6 +5,7 @@ import os, sys
 import numpy as np
 import UEFfile
 import dunjunz
+import matplotlib.pyplot as plt
 
 type_map = {
     0x28: "TREASURE",
@@ -21,8 +22,8 @@ type_map = {
     }
 
 gba_tile_type = {
-    "H_DOOR":      0x06,
-    "V_DOOR":      0x04,
+    "H_DOOR":      0x04,
+    "V_DOOR":      0x06,
     "WALL":        0x02,
     "BLANK":       0x00,
     "ARMOUR":   0x18,
@@ -157,44 +158,53 @@ if __name__ == "__main__":
         
         level = dunjunz.Level(map_data,1)
         level_np = np.zeros((num_rows*2,num_cols*2), dtype=np.uint8)
-
+        #Orignal Sprite were in a 6 x 4 
         for row in range(num_rows):
             for column in range(num_cols):
                 image_name, extra = get_image_name(level, level_number, row, column)
                 if image_name == "KEY":
-                        Keys.append(extra)
+                        n = extra[0]
+                        Keys.append(n)
                 if image_name == "V_DOOR" or image_name == "H_DOOR" :
-                        Doors.append(extra)
+                        n = extra[0]
+                        Doors.append(n)
                 if image_name == level_number:
                     gba_tile= gba_tile_type["WALL"]
                     level_np[row*2][column*2] = gba_tile
                     level_np[row*2][column*2+1] = gba_tile + 1
-                    level_np[row*2+1][column*2] = gba_tile + 2
-                    level_np[row*2+1][column*2+1] = gba_tile + 3
+                    level_np[row*2+1][column*2] = gba_tile + 12
+                    level_np[row*2+1][column*2+1] = gba_tile + 13
 
                 else:             
                     im = Image.open(os.path.join("tmp", image_name + ".bmp"))
                     gba_tile= gba_tile_type[image_name]
                     level_np[row*2][column*2] = gba_tile
                     level_np[row*2][column*2+1] = gba_tile + 1
-                    level_np[row*2+1][column*2] = gba_tile + 2
-                    level_np[row*2+1][column*2+1] = gba_tile + 3
+                    level_np[row*2+1][column*2] = gba_tile + 12
+                    level_np[row*2+1][column*2+1] = gba_tile + 13
+
 
         Doors2Keys.append(f"//Level {level_number}\n")
         Doors2Keys.append("{")
-        for D,Door in enumerate(Doors):
-            for K,Key in enumerate(Keys):
+        for K,Key in enumerate(Keys):
+            Found = False
+            for D,Door in enumerate(Doors):
+           
                 if Key == Door:
-                    #print(F" Door{Door} {D} Key{Key} {K}")
-                    Doors2Keys.append(K)
+                    Doors2Keys.append(D+1)
                     Doors2Keys.append(",")
+                    Found = True
                     break
+            if Found == False:
+                Doors2Keys.append(int(99))
+                Doors2Keys.append(",")
+                print("Door not found")
+                exit(0)
         if len(Doors) !=0:
             Doors2Keys.pop()
         Doors2Keys.append("},\n")
         Doors.clear()
         Keys.clear()
-        print(Doors2Keys)
         for row in range(num_rows*2):
             for column in range(num_cols*2):
                 index= level_np[row][column]
