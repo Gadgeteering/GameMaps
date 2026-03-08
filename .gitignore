@@ -1,0 +1,15 @@
+# Ignore GBA build files
+*.gba
+*.sav
+*.elf
+*.o
+*.bin
+*.euf
+*.png
+*.bmp
+*.h
+
+
+# Ignore editor temp files
+__pycache__/
+*.tmp
